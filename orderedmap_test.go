@@ -3,8 +3,8 @@ package orderedmap
 import (
 	"encoding/json"
 	"fmt"
-	"testing"
 	"sort"
+	"testing"
 )
 
 func TestOrderedMap(t *testing.T) {
@@ -60,12 +60,12 @@ func TestOrderedMap(t *testing.T) {
 		"mixed",
 	}
 	for i, _ := range keys {
-		if keys[i] != expectedKeys[i] {
+		if keys[i].(string) != expectedKeys[i] {
 			t.Error("Keys method", keys[i], "!=", expectedKeys[i])
 		}
 	}
 	for i, _ := range expectedKeys {
-		if keys[i] != expectedKeys[i] {
+		if keys[i].(string) != expectedKeys[i] {
 			t.Error("Keys method", keys[i], "!=", expectedKeys[i])
 		}
 	}
@@ -203,7 +203,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		t.Error("JSON Unmarshal error", err)
 	}
 	// Check the root keys
-	expectedKeys := []string{
+	expectedKeys := []interface{}{
 		"number",
 		"string",
 		"z",
@@ -224,7 +224,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	}
 	// Check nested maps are converted to orderedmaps
 	// nested 1 level deep
-	expectedKeys = []string{
+	expectedKeys = []interface{}{
 		"e",
 		"a { nested key with brace",
 		"after",
@@ -241,7 +241,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		}
 	}
 	// nested 2 levels deep
-	expectedKeys = []string{
+	expectedKeys = []interface{}{
 		"link",
 	}
 	vi, ok = v.Get("after")
@@ -256,7 +256,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		}
 	}
 	// multitype array
-	expectedKeys = []string{
+	expectedKeys = []interface{}{
 		"map",
 		"it",
 		":colon in key",
@@ -359,7 +359,16 @@ func TestOrderedMap_SortKeys(t *testing.T) {
 	o := New()
 	json.Unmarshal([]byte(s), &o)
 
-	o.SortKeys(sort.Strings)
+	o.SortKeys(func(keys []interface{}) {
+		var strs []string
+		for _, v := range keys {
+			strs = append(strs, v.(string))
+		}
+		sort.Strings(strs)
+		for i, v := range strs {
+			keys[i] = v
+		}
+	})
 
 	// Check the root keys
 	expectedKeys := []string{

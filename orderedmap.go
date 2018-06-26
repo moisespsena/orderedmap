@@ -11,7 +11,7 @@ var NoValueError = errors.New("No value for this key")
 var Done = errors.New("no more items in iterator")
 
 type KeyIndex struct {
-	Key   string
+	Key   interface{}
 	Index int
 }
 type ByIndex []KeyIndex
@@ -21,11 +21,11 @@ func (a ByIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByIndex) Less(i, j int) bool { return a[i].Index < a[j].Index }
 
 type Pair struct {
-	key   string
+	key   interface{}
 	value interface{}
 }
 
-func (kv *Pair) Key() string {
+func (kv *Pair) Key() interface{} {
 	return kv.key
 }
 
@@ -42,31 +42,29 @@ func (a ByPair) Len() int           { return len(a.Pairs) }
 func (a ByPair) Swap(i, j int)      { a.Pairs[i], a.Pairs[j] = a.Pairs[j], a.Pairs[i] }
 func (a ByPair) Less(i, j int) bool { return a.LessFunc(a.Pairs[i], a.Pairs[j]) }
 
-
-
 type OrderedMap struct {
-	keys   []string
-	values map[string]interface{}
+	keys   []interface{}
+	values map[interface{}]interface{}
 }
 
 func New() *OrderedMap {
 	o := OrderedMap{}
-	o.keys = []string{}
-	o.values = map[string]interface{}{}
+	o.keys = []interface{}{}
+	o.values = map[interface{}]interface{}{}
 	return &o
 }
 
-func (o *OrderedMap) Get(key string) (interface{}, bool) {
+func (o *OrderedMap) Get(key interface{}) (interface{}, bool) {
 	val, exists := o.values[key]
 	return val, exists
 }
 
-func (o *OrderedMap) Has(key string) bool {
+func (o *OrderedMap) Has(key interface{}) bool {
 	_, exists := o.values[key]
 	return exists
 }
 
-func (o *OrderedMap) Set(key string, value interface{}) {
+func (o *OrderedMap) Set(key interface{}, value interface{}) {
 	_, exists := o.values[key]
 	if !exists {
 		o.keys = append(o.keys, key)
@@ -74,7 +72,7 @@ func (o *OrderedMap) Set(key string, value interface{}) {
 	o.values[key] = value
 }
 
-func (o *OrderedMap) Delete(key string) {
+func (o *OrderedMap) Delete(key interface{}) {
 	// check key is in use
 	_, ok := o.values[key]
 	if !ok {
@@ -91,12 +89,12 @@ func (o *OrderedMap) Delete(key string) {
 	delete(o.values, key)
 }
 
-func (o *OrderedMap) Keys() []string {
+func (o *OrderedMap) Keys() []interface{} {
 	return o.keys
 }
 
 // SortKeys Sort the map keys using your sort func
-func (o *OrderedMap) SortKeys(sortFunc func(keys []string)) {
+func (o *OrderedMap) SortKeys(sortFunc func(keys []interface{})) {
 	sortFunc(o.keys)
 }
 
@@ -272,12 +270,12 @@ func mapToOrderedMap(o *OrderedMap, s string, m map[string]interface{}) {
 	// Sort the keys
 	sort.Sort(ByIndex(orderedKeys))
 	// Convert sorted keys to string slice
-	k := []string{}
+	k := []interface{}{}
 	for _, ki := range orderedKeys {
 		k = append(k, ki.Key)
 	}
 	// Set the OrderedMap values
-	o.values = m
+	o.values = mapStringToInterface(m)
 	o.keys = k
 }
 
@@ -285,7 +283,7 @@ func (o OrderedMap) MarshalJSON() ([]byte, error) {
 	s := "{"
 	for _, k := range o.keys {
 		// add key
-		kEscaped := strings.Replace(k, `"`, `\"`, -1)
+		kEscaped := strings.Replace(k.(string), `"`, `\"`, -1)
 		s = s + `"` + kEscaped + `":`
 		// add value
 		v := o.values[k]
